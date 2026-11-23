@@ -1,0 +1,366 @@
+\documentclass[conference]{IEEEtran}
+
+% --- Paquetes que utilisare para el documento ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla,es-nodecimaldot]{babel}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{cite}
+\usepackage{url}
+\usepackage{tikz}
+\usepackage{subcaption}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+
+% --- Configuración del bloque de Algoritmo ---
+\lstset{
+    basicstyle=\ttfamily\scriptsize,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=5pt,
+    frame=lines,
+    captionpos=t,
+    breaklines=true,
+    literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1 {≤}{{$\le$}}1 {≥}{{$\ge$}}1
+}
+
+% --- Estilos para diagramas TikZ ---
+\tikzstyle{boxblue} = [rectangle, rounded corners=2pt, minimum width=2.4cm, minimum height=0.9cm, text centered, draw=black, fill=blue!10, font=\scriptsize, align=center]
+\tikzstyle{boxorange} = [rectangle, rounded corners=2pt, minimum width=2.6cm, minimum height=0.9cm, text centered, draw=black, fill=orange!20, font=\scriptsize, align=center]
+\tikzstyle{boxgreen} = [rectangle, rounded corners=2pt, minimum width=2.8cm, minimum height=0.9cm, text centered, draw=black, fill=green!15, font=\scriptsize, align=center]
+\tikzstyle{arrow} = [thick,->,>=stealth]
+\raggedbottom
+\begin{document}
+
+\title{Manejo basado en fenología y detección temprana con dron del barrenador de ramas del aguacate (\textit{Macrocopturus aguacatae}), plaga cuarentenaria: propuesta de aplicación móvil y dron para huertos de Turicato, Michoacán}
+
+\author{\IEEEauthorblockN{Diego Arturo Almonte Villagómez}
+\IEEEauthorblockA{Ingeniería en Inteligencia Artificial, Universidad Autónoma Chapingo, Texcoco - Estado de México.}}
+
+\maketitle
+
+\begin{abstract}
+La exportación de aguacate de Michoacán exige huertos libres de barrenadores reglamentados, y el barrenador de ramas \textit{Macrocopturus aguacatae} (antes \textit{Copturus aguacatae}) es una de las especies que pueden quitar los documentos para poder vender la fruta. En Turicato Michoacán el estatus fitosanitario es de bajo control, el daño por barrenador de ramas va en crecimiento y recientemente se reportaron larvas en fruto. La poda sanitaria es la principal medida de control, pero se retrasa porque las ramas infestadas llevan fruta que los productores necesitan vender; además, las fichas técnicas oficiales están desactualizadas ante un clima atípico. Este reporte revisa la biología, detección y control de la plaga con fuentes oficiales y propone dos herramientas basadas en IA (inteligencia artificial): 
+
+ (i) una aplicación para celular que pueda predecir la etapa de vida de la plaga y programe el tratamiento adecuado a cada etapa del insecto,  
+
+ (ii) un dron RGB para capturar imágenes y videos aéreos.Estas cámaras son importantes para aplicaciones en agricultura, topografía y monitoreo ambiental, permitiendo la toma de decisiones basadas en datos visuales de alta resolución. Los drones RGB son utilizados para diversas aplicaciones, como la precisión agrícola, la cartografía y el análisis de datos en tiempo real, gracias a su capacidad para procesar imágenes directamente en el campo.) con un detector de red neuronal convolucional que marca árboles con síntomas en la copa para su revisión en campo. Se presentan el diseño, las ecuaciones, las reglas de decisión y un protocolo de validación. La validación en campo aún no se ha realizado; por ello no se afirma ningún desempeño.
+\end{abstract}
+
+\begin{IEEEkeywords}
+aguacate, \textit{Macrocopturus aguacatae}, plaga cuarentenaria, modelo fenológico, dron, visión por computadora, agricultura de precisión.
+\end{IEEEkeywords}
+%aqui debe ir mi introduccion
+\section{INTRODUCCIÓN}
+
+\subsection{Contexto y problema}
+México es el principal productor y exportador de aguacate del mundo, y Michoacán concentra cerca del 80\% de la producción nacional \cite{ref1}. La fruta de huertos infestados con \textit{Macrocopturus aguacatae} no puede exportarse \cite{ref1}. La especie pertenece a un grupo de plagas reglamentadas del aguacate que incluye dos barrenadores pequeños del hueso (\textit{Conotrachelus perseae} y \textit{C. aguacatae}), el barrenador grande del hueso (\textit{Heilipus lauri}) y la palomilla barrenadora del hueso (\textit{Stenoma catenifer}) \cite{ref1, ref2}. La detección de barrenadores en cargamentos provocó la destrucción de hasta 52t de fruta en cuatro estados entre el 31 de octubre y el 1 de noviembre de 2026 \cite{ref3, ref4}; esos casos involucraron a los barrenadores del hueso, pero se demuestra cómo claramente una sola detección se traduce en pérdida económica.
+
+En el municipio de Turicato, Michoacán, los huertos de productores sirvieron como caso de estudio. La zona tiene un estatus fitosanitario de bajo control; desde el año pasado se han encontrado en fruto larvas atribuidas al barrenador de ramas; un solo espécimen vivo es suficiente para dejar un huerto fuera del mercado; y recientemente se realizó el primer foro municipal sobre el barrenador de ramas para actualizar a los productores sobre normatividad y planes de trabajo binacionales. La movilización fitosanitaria del aguacate se rige por la NOM-066-FITO-2002 \cite{ref5}. Los productores también dicen que no hacen el corte de ramas con gusano hasta después de la cosecha y luego lo olvidan, lo que permite que las infestaciones crezcan y se extiendan a huertos vecinos. La poda sanitaria es justamente el control recomendado como mejor estrategia, y los huertos descuidados actúan como focos de infestación para los huertos cercanos \cite{ref1}.
+
+\subsection{Características de la plaga}
+El barrenador de ramas, llamado \textit{Macrocopturus aguacatae} Kissinger en la ficha técnica de 2025 (antes \textit{Copturus aguacatae}), es nativo de México y se alimenta de las ramas tiernas del aguacate \cite{ref6}. El aguacate es su único hospedante reportado, principalmente el criollo mexicano (var. \textit{drymifolia}) y el Hass, que comparten los volátiles que lo atraen \cite{ref6}. Se presenta en el centro, suroeste, occidente y norte de México (Guanajuato, Estado de México, Michoacán, Querétaro, Puebla, Oaxaca, Nayarit, Nuevo León) y en Guatemala \cite{ref6, ref2}. Los barrenadores de tallos y ramas relacionados cambian entre países (por ejemplo, \textit{Copturomimus hustachei} en Colombia), por lo que los datos biológicos no pueden transferirse entre países y regiones \cite{ref7}.
+
+Los huevos son ovalados, de $0.5 \times 0.3$ mm, translúcidos al ser puestos y blanco perla pocas horas después, y se desarrollan en 10--12 días. Las larvas no tienen patas, son blancas o blanco-rosadas,
+(Fig.~\ref{fig:danos_campo}d)
+miden 1 mm al eclosionar y hasta 12.5 mm, con cápsula café claro. Las pupas miden $6\text{--}8 \times 2\text{--}2.5$ mm y duran 17--19 días. Los adultos son negros, de $3.77\text{--}4.87 \times 2.00\text{--}2.25$ mm, con élitros rojizos; de la emergencia a la oviposición pasan en promedio 32--33 días, y la longevidad máxima es de 42 días en machos y 48 en hembras \cite{ref6}. Los adultos son activos de día y se desplazan sobre las ramas. La hembra perfora la corteza de ramas que reciben luz solar directa o que están en los lados este y sur, ponen el huevo en la entrada del orificio y lo empuja hasta el fondo; puede poner como máximo siete u ocho huevos, en masa o en grupo \cite{ref6}.
+
+El daño comienza con la oviposición: puntos blancos polvosos en la entrada, luego grumos secos de excremento y savia cristalizada (perseitol) de color crema a café oscuro \cite{ref6, ref8}
+(Fig.~\ref{fig:danos_campo}).
+. Las larvas barrenan hasta la médula y tapan el flujo de agua y nutrientes, causando defoliación y aborto de flores y frutos \cite{ref6}. El daño no es significativo en árboles con follaje abundante, pero junto con el patógeno \textit{Phytophthora cinnamomi} los árboles pierden follaje y vigor más rápido y pueden morir \cite{ref6}. La infestación es mayor en el estrato medio (2--4 m) y menor por encima de 4 m, en ramas terciarias de los flujos vegetativos del año anterior, de 1.5--3.0 cm de diámetro; la larva barrena hasta 20 cm en ramas delgadas pero no más de 2.0 cm en ramas gruesas,
+(Figs.~\ref{fig:danos_campo}b y \ref{fig:danos_campo}c)
+el tronco se ataca solo de forma excepcional, y se han visto galerías con hasta 32 larvas \cite{ref6}. Los árboles mal fertilizados son más susceptibles \cite{ref6, ref9}. Se han reportado pérdidas de unas 2--3 t/ha, y las poblaciones se agregan en focos que no cubren el 100\% de la parcela \cite{ref8}.
+
+La dispersión ocurre por vuelo, caminando sobre las ramas y, a cierta distancia, por el viento \cite{ref6}. Las mayores poblaciones se dan entre 1200 y 1299 msnm y son mínimas por encima de 2100 m, y su desarrollo es más lento a mayor altitud \cite{ref6, ref10}. En la Sierra de Guerrero hay larvas todo el año, con mayor abundancia de febrero a mayo, y en Atlixco, Puebla, los adultos aparecen de la segunda semana de junio a septiembre; lo usual es una generación al año, aunque algunos autores reportan dos \cite{ref6}. La ficha anterior, de 2016, daba un ciclo completo de 215.8 días (2262.39 unidades calor, UC) y 264--304 días en tres sitios de Michoacán \cite{ref1, ref10}.
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[b]{0.48\columnwidth}
+        \centering
+        \includegraphics[height=3.4cm, keepaspectratio]{dano1.jpg}
+        \caption*{(a) Savia cristalizada y aserrín.}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[b]{0.48\columnwidth}
+        \centering
+        \includegraphics[height=3.4cm, keepaspectratio]{dano2.jpg}
+        \caption*{(b) Galería y larva en rama.}
+    \end{minipage}
+    
+    \vspace{0.2cm}
+    
+    \begin{minipage}[b]{0.48\columnwidth}
+        \centering
+        \includegraphics[height=3.4cm, keepaspectratio]{dano3.jpg}
+        \caption*{(c) Daño en rama gruesa.}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[b]{0.48\columnwidth}
+        \centering
+        \includegraphics[height=3.4cm, keepaspectratio]{dano4.jpg}
+        \caption*{(d) Detalle de larva ápoda.}
+    \end{minipage}
+    
+    \caption{Signos de infestación y estado larval de \textit{M. aguacatae} en huertos de Turicato: (a) puntos blancos polvosos y aserrín; (b) disección de rama delgada; (c) daño en rama gruesa; (d) larva extraída en campo.}
+    \label{fig:danos_campo}
+\end{figure}
+
+\subsection{Detección}
+En campo, la infestación se ve primero como puntos blancos polvosos y luego como aserrín y savia cristalizada en las ramas; cualquier signo así, o un daño parecido, obliga a cortar la rama y disectarla para buscar algún estado biológico \cite{ref6} (Fig.~\ref{fig:danos_campo}b).
+
+El protocolo de 2025 exige un censo de todos los árboles en la primera visita; desde el segundo muestreo, una muestra aleatoria del 10\% de los árboles por hectárea sin repetirlos; cuatro ramas por árbol, una por punto cardinal, de preferencia de 1.5--2.0 cm de diámetro, a más de 1.5 m y las más expuestas al sol; y muestreo cada cuatro meses durante todo el año.(Fig.~\ref{fig:inspeccion});
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=4.8cm, keepaspectratio]{inspeccion_campo.jpg}
+    \caption{Inspección manual de ramas en el estrato medio-alto de la copa en un huerto de estudio en Turicato, Michoacán.}
+    \label{fig:inspeccion}
+\end{figure}
+Los huertos de traspatio siguen el mismo método, pero se muestrean todos los árboles \cite{ref6}. La ficha de 2016 describía además el sacudido de ramas sobre una manta blanca de $2 \times 2$ m, intervalos de 3 meses en zonas libres y 45 días bajo control, y trampas pegajosas amarillas y azules a 2 m, que capturaron más adultos que el sacudido \cite{ref1, ref11}. Los volátiles que emiten los aguacates atacados atraen al insecto \cite{ref12}, y una feromona sintética ha sido objeto de un informe técnico \cite{ref13}, pero no hay un atrayente comercial disponible, lo que coincide con la situación de los productores.
+
+\subsection{Control}
+Los controles identificados en la literatura y en campo son los siguientes: (a) Poda: poda sanitaria de las ramas dañadas. La ficha de 2025 recomienda llevarlas a una fosa fuera de la plantación, picarlas (con un machete), cubrirlas con al menos 20 cm de tierra y cerrar la fosa con suelo a 50 cm sobre la última capa de material \cite{ref6}; la ficha de 2016 recomendaba quemarlas \cite{ref1}. (b) Biológico: cuando el monitoreo detecta adultos, dos aspersiones foliares con 45 días de diferencia de \textit{Beauveria bassiana}, \textit{Bacillus thuringiensis} y \textit{Metarhizium anisopliae}, a $3\text{ g/L}$, por la mañana (6:00--10:00) o después de las 4:00 pm \cite{ref6}; también se han reportado los parasitoides \textit{Urosigalphus avocadoae} y \textit{Neocatolaccus tylodermae} y el nematodo \textit{Heterorhabditis indica} (laboratorio) \cite{ref1, ref14}. (c) Químico: los insecticidas son la última opción, dirigidos al follaje cuando el monitoreo encuentra más de cuatro especímenes por árbol, con ingredientes activos autorizados por la COFEPRIS \cite{ref6}. Como la plaga está agregada espacialmente, es factible un tratamiento dirigido en lugar de uno generalizado \cite{ref8}.
+
+\subsection{Estado del problema y conflictos}
+Las larvas de picudos son difíciles de detectar y controlar porque se alimentan dentro del tejido vegetal \cite{ref2}. Para insectos barrenadores de madera en huertos, se han usado datos multiespectrales de dron para detectar síntomas tempranos de \textit{Capnodis tenebrionis} \cite{ref15}, imágenes RGB de dron con detectores tipo YOLO para encontrar árboles infestados \cite{ref16}, y se han desarrollado flujos de aprendizaje profundo con dron para mapear daño por plagas en México\cite{ref17}. En cuanto a fenología, el calentamiento altera el comportamiento de los insectos de formas dificiles y específicas de cada especie \cite{ref18, ref19}. No encontré una herramienta reportada que combine un programador de tratamientos por etapa con detección por dron para \textit{M. aguacatae}. Este vacio tecnologico, sumado con las antigüedad de los datos publicados, hace muy buena la propuesta.
+
+\subsection{Objetivo, alcance y criterios de éxito}
+Objetivo: diseñar un sistema de apoyo a la decisión (app + dron) que le diga al productor qué hacer, cuándo y dónde hacer una acción contra \textit{M. aguacatae}. Alcance: huertos de aguacate en Turicato.
+Variables: temperatura diaria, coordenadas del huerto, fecha de cosecha, conteos de trampas, imágenes de dron. 
+Restricciones: las recomendaciones deben seguir las dosis de etiqueta y las guías oficiales; el sistema no sustituye el muestreo oficial. Criterios de éxito: mi propuesta en la Tabla III.
+
+\section{METODOLOGÍA}
+El sistema completo, descrito en la Sección III, se muestra en la Fig. 1.
+
+\subsection{Fuentes de información y ética}
+Los parámetros biológicos y las opciones de control se tomaron de documentación técnica oficial y literatura arbitrada (Sección I). Las observaciones locales provienen de las visitas y conversaciones que obtuve de los productores; y lo dicho sobre aplicación de la norma o expedición de documentos son percepciones de los propios productores y no se usan como evidencia. Los datos de huertos que se recopilen deberán contar con el consentimiento del propietario, y no debe guardar datos personales si no solo los necesarios. La información de control químico se limita a lo que permiten la etiqueta del producto y las fuentes oficiales.
+
+\subsection{Modelo fenológico}
+Las unidades calor diarias (UC) se calculan con el método del promedio, con un umbral inferior de desarrollo $T_0$ que debe checarse para cada huerto, porque las fuentes publicadas reportan totales de UC pero el umbral utilizado debe confirmarse:
+\begin{equation}
+UC_{d} = \max\left(0, \frac{T_{\text{máx},d} + T_{\text{mín},d}}{2} - T_{0}\right)
+\end{equation}
+La suma se acumula desde una fecha de referencia $d_{0}$  es: (fecha de oviposición para una cohorte, o 1 de enero para el modelo poblacional) es
+\begin{equation}
+S(d) = \sum_{k=d_0}^{d} UC_{k}
+\end{equation}
+Una cohorte está en la etapa $j$ cuando los umbrales acumulados cumplen
+\begin{equation}
+G_{j-1} \le S(d) < G_{j}
+\end{equation}
+con los umbrales $G_{1}\dots G_{5}$ tomados del estudio \cite{ref10} tal como los reporta la ficha oficial \cite{ref1}. Se usan umbrales específicos por etapa porque la sensibilidad térmica varía entre estados \cite{ref20}.
+
+
+
+\begin{table}[htbp]
+\centering
+\caption{Duración de las etapas. Días de la ficha de 2025 \cite{ref6}; UC de \cite{ref1,ref10}; $G$ acumulado calculado aquí; --- = no se indica.}
+\label{tab:etapas}
+\setlength{\tabcolsep}{3.5pt}
+\footnotesize
+\begin{tabular}{lccc}
+\toprule
+\textbf{Etapa} & \textbf{Días} & \textbf{UC} & \textbf{$G_{\text{acum}}$ (UC)} \\
+\midrule
+Huevo & 10--12 & 90.58 & 90.58 \\
+Larva (en rama) & --- & 1295.60 & 1386.18 \\
+Pupa & 17--19 & 230.87 & 1617.05 \\
+Adulto preoviposición & 32--33 & 407.94 & 2024.99 \\
+Adulto (oviposición, muerte) & máx. 42 M / 48 H & 237.40 & 2262.39 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Reglas de decisión}
+Las reglas asocian la etapa predicha con una acción (Fig. 2): (1) cuando se abre la ventana de emergencia de adultos ($S \ge 1617$ UC para la cohorte más avanzada, o el primer adulto encontrado en el monitoreo), recomendar dos aspersiones foliares de los entomopatógenos que nombra la ficha de 2025, con 45 días de diferencia, por la mañana o después de las 4:00 pm, siguiendo la etiqueta del producto \cite{ref6}, y aumentar la exploración; (2) mientras las larvas están dentro de las ramas, recomendar revisar las ramas expuestas al sol de los lados este y sur \cite{ref6} en busca de savia cristalizada y, si se encuentra, cortarlas, picarlas y enterrarlas en una fosa fuera del huerto \cite{ref6}; (3) después de la cosecha y antes de la ventana de emergencia, recomendar una ventana de poda, que es la respuesta de la propuesta a la resistencia de los productores a cortar ramas que aún llevan fruta. La regla (3) es una hipótesis de diseño por probar, no una recomendación; (4) si en la exploración encuentra más de cuatro especímenes en un árbol, la app marca el árbol para revisión de un técnico, que podría considerar un insecticida foliar solo como última opción y con ingredientes activos autorizados por la COFEPRIS \cite{ref6}; la app no da dosis de insecticidas. Las prioridades espaciales vienen de la distribución agregada de la plaga \cite{ref8}.
+
+\subsection{Detección con dron y detector}
+Un dron con cámara RGB vuela una trayectoria sobre cada huerto (Fig. 3) y genera un ortomosaico; se segmentan las copas de los árboles y un detector convolucional de la familia YOLO clasifica copas o ventanas de imagen como sanas o sintomáticas (secado, defoliación). Desde arriba solo son visibles los síntomas de la copa; las larvas dentro de las ramas no, por lo que el resultado es una lista de prioridades para revisar en campo, no un diagnóstico. Los datos de entrenamiento se recopilarán en los huertos del caso de estudio y compararán las imágenes con la revisión en campo de ramas cortadas. El vuelo debe cumplir la normatividad mexicana de aviación civil y contar con el consentimiento del productor para volarlo.
+\newpage
+\section{DISEÑO Y IMPLEMENTACIÓN}
+La Fig. 1 muestra: tres entradas (clima, registros del huerto y recorrido en campo) alimentan un motor fenológico y un detector por dron, donde sus salidas se combinan en un mapa de riesgo y reglas que generan alertas y un calendario de tareas en la app.
+
+% --- FIGURA 1 ---
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=0.7cm and 0.3cm]
+    \node (clima) [boxblue] {Datos del clima \\ ($T_{\text{máx}}, T_{\text{mín}}$)};
+    \node (huerto) [boxblue, right=of clima] {Registro del huerto \\ (GPS, ID de árbol, \\ fecha de cosecha)};
+    \node (campo) [boxblue, right=of huerto] {Recorrido en campo \\ (ramas, trampas)};
+    
+    \node (motor) [boxorange, below=0.8cm of clima, xshift=0.9cm] {Motor de fenología \\ (modelo de unidades calor)};
+    \node (dron) [boxorange, below=0.8cm of campo, xshift=-0.9cm] {Imágenes de dron + \\ detector CNN};
+    
+    \node (mapa) [boxgreen, below=0.8cm of huerto, yshift=-1.6cm, minimum width=4.2cm] {Mapa de riesgo + reglas de \\ decisión (qué / cuándo / dónde)};
+    \node (app) [boxgreen, below=0.6cm of mapa, minimum width=4.2cm] {App móvil: alertas \\ y calendario de tareas};
+
+    \draw [arrow] (clima) -- (motor);
+    \draw [arrow] (huerto) -- (motor);
+    \draw [arrow] (huerto) -- (dron);
+    \draw [arrow] (campo) -- (dron);
+    \draw [arrow] (motor) -- (mapa);
+    \draw [arrow] (dron) -- (mapa);
+    \draw [arrow] (mapa) -- (app);
+\end{tikzpicture}
+\caption{Arquitectura del sistema.}
+\label{fig:arquitectura}
+\end{figure}
+
+El Algoritmo 1 da la actualización diaria. La app también programa el muestreo oficial cada cuatro meses \cite{ref6} y guarda cada acción realizada (aspersión, poda, recorrido) para poder replanificar el calendario y acomodar el historial.
+
+% --- FIGURA 2: tabla de toma de decicion de decisión ---
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=0.55cm]
+    \node (act) [boxblue, minimum width=4.5cm] {Actualización diaria: $UC(d)$ con el clima};
+    \node (umbral) [boxblue, below=of act, minimum width=4.5cm] {UC acumuladas vs. umbrales \\ de etapa por cohorte};
+    
+    \node (q1) [boxorange, below left=0.6cm and -0.4cm of umbral, minimum width=3.2cm] {¿Ventana de emergencia \\ de adultos abierta?};
+    \node (q2) [boxorange, below right=0.6cm and -0.4cm of umbral, minimum width=3.2cm] {¿Larvas dentro \\ de las ramas?};
+    
+    \node (a1) [boxgreen, below=0.6cm of q1, minimum width=3.2cm] {Aspersión a adultos: \\ \textit{Beauveria} / \textit{Metarhizium} / \textit{Bt} \\ (dosis de etiqueta)};
+    \node (a2) [boxgreen, below=0.6cm of q2, minimum width=3.2cm] {Explorar, cortar y enterrar \\ ramas infestadas \\ (poda sanitaria)};
+    
+    \node (reg) [boxblue, below=3.1cm of umbral, minimum width=4.5cm] {Registrar acción, reexplorar, \\ actualizar mapa};
+
+    \draw [arrow] (act) -- (umbral);
+    \draw [arrow] (umbral) -| (q1);
+    \draw [arrow] (umbral) -| (q2);
+    \draw [arrow] (q1) -- node[right, font=\tiny]{sí} (a1);
+    \draw [arrow] (q2) -- node[right, font=\tiny]{sí} (a2);
+    \draw [arrow] (a1) |- (reg);
+    \draw [arrow] (a2) |- (reg);
+\end{tikzpicture}
+\caption{toma de decisión para recomendaciones por etapa.}
+\label{fig:decision}
+\end{figure}
+
+% --- FIGURA 3: Flujo de detección con dron ---
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=0.35cm]
+    \node (vuelo) [boxblue, minimum width=1.6cm] {Vuelo RGB \\ (malla)};
+    \node (orto) [boxblue, right=of vuelo, minimum width=1.6cm] {Ortomosaico \\ copas};
+    \node (cnn) [boxorange, right=of orto, minimum width=1.6cm] {CNN: secado \\ defoliación};
+    \node (prio) [boxgreen, right=of cnn, minimum width=1.7cm] {Árboles \\ prioritarios};
+    
+    \draw [arrow] (vuelo) -- (orto);
+    \draw [arrow] (orto) -- (cnn);
+    \draw [arrow] (cnn) -- (prio);
+\end{tikzpicture}
+\caption{Flujo de detección con dron.}
+\label{fig:dron}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Componentes planeados. Las versiones se registrarán en el repositorio del proyecto.}
+\label{tab:componentes}
+\begin{tabular}{p{2.3cm}p{5.5cm}}
+\toprule
+\textbf{Componente} & \textbf{Selección/estado} \\
+\midrule
+Motor fenológico & Módulo en Python, Ecs. (1)--(3); parámetros en un archivo de configuración \\
+Entrada de clima & Estación más cercana o servicio de pronóstico (por seleccionar) \\
+App móvil & App multiplataforma con calendario sin conexión (por seleccionar) \\
+Dron & Multirrotor, cámara RGB (modelo y versión por definir al comprar) \\
+Detector & Modelo de la familia YOLO, aprendizaje por transferencia (versión por registrar) \\
+Trampas & Trampas pegajosas amarillas/azules a 2 m, como en \cite{ref11} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{VALIDACIÓN, RESULTADOS Y REPRODUCIBILIDAD}
+
+\subsection{Resultados disponibles hasta ahora}
+Aún no se han recopilado datos de campo. El único resultado verificado es la consistencia interna de los parámetros térmicos: las duraciones de las etapas de la Tabla I suman 2262.39 UC, igual al ciclo total reportado en la fuente \cite{ref1}, por lo que los umbrales acumulados usados en la Ec. (3) son consistentes con él. 
+\subsection{Validación planeada}
+
+\begin{table}[htbp]
+\centering
+\caption{Métricas de validación. Las metas son objetivos del diseño míos, no resultados.}
+\label{tab:metricas}
+\begin{tabular}{p{2.5cm}p{3.4cm}c}
+\toprule
+\textbf{Métrica} & \textbf{Definición} & \textbf{Meta propuesta} \\
+\midrule
+Error de tiempo de emergencia & $E_{t}$ Ec. (4), días & $\le 14\text{ d}$ \\
+cansancio del detector & $R=VP/(VP+FN)$ en árboles sintomáticos & $\ge 0.80$ \\
+Precisión del detector & $P=VP/(VP+FP)$ & $\ge 0.70$ \\
+$F1$ & Ec. (5) & $\ge 0.75$ \\
+Repetición & Huertos $\times$ fechas & $\ge 2 \times 2$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Reproducibilidad}
+Todos los parámetros ($T_{0}, G_{j}$, coordenadas del huerto, umbrales) se guardarán en un archivo, junto con el código, los pesos del detector entrenado, la guía de etiquetado de imágenes y las hojas de conteo de trampas, para que otro grupo pueda repetir la calibración en otra localidad.
+
+\section{ANÁLISIS Y DISCUSIÓN}
+\textbf{Relación con la literatura.} La agregación espacial de la plaga \cite{ref8} respalda el tratamiento por focos y hace razonable una herramienta basada en mapas; la evidencia de muestreo y trampas \cite{ref6, ref11} define qué referencia en campo puede usarse. Los estudios con dron en otros barrenadores de madera \cite{ref15} y en detección a nivel de árbol \cite{ref16, ref17} sugieren que los síntomas de la copa pueden detectarse, pero ninguno aborda esta plaga.
+
+\textbf{Limitaciones y problemas.} (i) El dron ve síntomas de la copa, no larvas, y el estrato medio es donde ocurre la mayor parte de la infestación \cite{ref6}; por ello la exhaustividad será limitada y las revisiones en campo siguen siendo necesarias. (ii) El modelo depende de $T_{0}$ y de umbrales medidos en otros lugares; el ciclo va de unos 216 a 304 días entre estudios \cite{ref1}, y la altitud cambia el tiempo de desarrollo, por lo que se requiere calibración local. (iii) El enfoque de grados-día supone una respuesta lineal sobre un umbral, y los estudios retrasan la sensibilidad térmica \cite{ref20}. (iv) El calentamiento global puede cambiar el momento y el número de generaciones de formas específicas de cada especie \cite{ref18, ref19}, lo que coincide con la preocupación de que las fichas oficiales estén desactualizadas, pero no se ha demostrado que esta plaga haya cambiado; esto debe probarse con datos locales de trampas. (v) El deterioro de la copa también tiene otras causas: la ficha de 2025 indica que \textit{Phytophthora cinnamomi} acelera el declive del árbol cuando se combina con el barrenador \cite{ref6}, por lo que las copas sintomáticas requieren confirmación en campo y el detector puede confundir causas.
+
+\textbf{Cambios oficiales.} La ficha de 2025 indica que sustituye a los documentos anteriores y cambia el nombre de la especie \cite{ref6}. Respecto a la ficha de 2016 \cite{ref1}, fija el muestreo cada cuatro meses todo el año (en lugar de 3 meses o 45 días), recomienda enterrar las ramas podadas (en lugar de quemarlas) y el texto revisado no menciona trampas. Estos cambios muestran que la guía oficial cambia constantemente, por lo que la app mantiene estos parámetros configurables y no fijos; por sí mismos no son evidencia de obsolescencia causada por el clima.
+
+\textbf{Reportes locales sin confirmar.} La ficha técnica de 2016 indica que las larvas no pueden dispersarse por el fruto \cite{ref1}, y el daño descrito en la ficha de 2025 (defoliación y aborto de flores y frutos) no incluye larvas que se desarrollen en el fruto \cite{ref6}. Por lo tanto, las larvas reportadas en fruto requieren identificación en laboratorio: pueden pertenecer a un barrenador del hueso, o pueden ser un cambio de comportamiento. Mientras no se identifiquen, el reporte es una hipótesis.
+
+\textbf{Factores humanos.} El principal problema de esto es: poda retrasada y baja asistencia a capacitaciones gratuitas. La app atiende el momento (una ventana de poda) y la comunicación, pero no puede obligar al productor a hacerlo; el efecto que causa la conducta de los productores no se conoce y están en su derecho ya que al final de cuentas son sus huertos. Los beneficios dependen de que los vecinos también actúen, porque los adultos se dispersan por vuelo y viento \cite{ref6} y los huertos descuidados infestan a los huertos de alrededor \cite{ref1}. Por último, la emisión de permisos irregulares es algo que va a hacer que este problema no mejore.
+\newpage
+\section{CONCLUSIONES Y TRABAJO FUTURO}
+El problema surge desde lo complicado que es que los productores con este problema tomen medidas para controlarlo o razonen de que este problema es un riesgo sanitario, y aunque existan las capacitaciones gratuitas de parte de instituciones como APEAM (Asociación de Productores y Empacadores Exportadores de Aguacate de México) que es la principal organización que representa y coordina la exportación de aguacate mexicano a nivel internacional, Juntas Locales de Sanidad Vegetal, entre otras instituciones los productores no asisten y esto causa más desinformación; otro de los problemas es la exigencia de los productores y presiones e irregularidades para conseguir los permisos para la venta de su producto  localmente, nacionalmente e internacionalmente ya que sobre esto los trabajadores son vulnerables ante ello, lo que causa que la región sea sancionada con ya no poder vender el aguacate de esa región lo cual no afecta solo al productor con el problema sino también a los demás productores de la región.
+Sin embargo, la combinación de la aplicación móvil y el dron busca facilitar la toma de decisiones en el huerto sin depender únicamente de que el productor asista a cursos presenciales lo cual ayudaría demasiado a que estos productores se les facilite el controlar y detectar el problema y se reduzca el problema en la región. Aunque el sistema aún está en fase de diseño puede llegar a ser una herramienta clave para esta problemática la cual no solo afecta al aguacate sino también a otros cultivos, aunque para estas variables se tendrían que considerar distintos puntos de vista por la especie de barrenadores entre otras variables las bases y la idea ya la tenemos lo cual es un avance muy grande, uno de los trabajos a futuro es calibrar el umbral $T_0$ en Turicato y validar el modelo con trampas en campo, entrenar el detector de imágenes locales y confirmar la identidad de las larvas halladas en el fruto.
+
+\section*{DECLARACIÓN DE USO DE IA}
+Se usó un asistente de IA (Claude, Anthropic, consultado del 9-18 de nov. de 2026) para (a) corregir faltas de ortografía y gramatica, (b) redactar el texto en inglés y (c) hacer las referencias bibliograficas. Las figuras, La idea del proyecto, las observaciones del caso de estudio, la propuesta de la app y el dron, y las conclusiones son propias. Los parámetros térmicos de la Tabla I provienen de fuentes publicadas y no fueron generados por la IA. La literatura es mayormente mexicana y las observaciones locales provienen de un solo municipio.
+\newpage
+\begin{thebibliography}{99}
+
+\bibitem{ref1} SENASICA-DGSV, ``Barrenador de ramas y tronco del aguacate (\textit{Copturus aguacatae} Kissinger, 1957),'' Ficha técnica, Centro Nacional de Referencia Fitosanitaria, Tecámac, México, 2016.
+
+\bibitem{ref2} R. W. Jones, C. Illescas-Riquelme, V. López-Martínez, N. Bautista-Martínez y C. W. O'Brien, ``Emergent and possible invasive pest species of weevils in Mexico,'' \textit{Florida Entomologist}, vol. 102, no. 3, pp. 480--485, sep. 2019, doi: 10.1653/024.102.0302.
+
+\bibitem{ref3} ``Gusano barrenador obliga a destruir 52 toneladas de aguacate en cuatro estados de México,'' \textit{Noroeste}, nov. 2026. [En línea]. Disponible en: \url{https://www.noroeste.com.mx}.
+
+\bibitem{ref4} ``¿Qué es el gorgojo barrenador del aguacate, la plaga que obligó a destruir 52 toneladas del fruto en Michoacán?,'' \textit{Infobae}, nov. 3, 2026. [En línea]. Disponible en: \url{https://www.infobae.com/mexico}.
+
+\bibitem{ref5} Diario Oficial de la Federación, ``NOM-066-FITO-2002, Especificaciones para el manejo fitosanitario y movilización del aguacate,'' México, 2005.
+
+\bibitem{ref6} SENASICA-DGSV-CNRF, ``Barrenador de ramas del aguacatero, \textit{Macrocopturus aguacatae} Kissinger (Coleoptera: Curculionidae),'' Ficha técnica No. 004/2025, Secretaría de Agricultura y Desarrollo Rural, México, feb. 2025.
+
+\bibitem{ref7} E. Moreno-Gaviria, V. Díaz-Grisales y A. Carabalí-Muñoz, ``Biología de \textit{Copturomimus hustachei} Kissinger, 1957 (Coleoptera: Curculionidae), barrenador de tallos y ramas de aguacate (\textit{Persea americana}) en Colombia,'' \textit{Rev. Colomb. Entomol.}, vol. 49, no. 1, e12215, 2023, doi: 10.25100/socolen.v49i1.12215.
+
+\bibitem{ref8} R. Rivera Martínez, J. F. Ramírez Dávila, A. Tapia Rodríguez, D. K. Figueroa Figueroa, A. D. Acosta Guadarrama y R. Serrato Cuevas, ``Comportamiento espacial del barrenador de la rama en aguacate utilizando el método del SADIE en el Estado de México,'' \textit{Rev. Mex. Cienc. Agric.}, vol. 13, no. 2, pp. 247--259, 2022.
+
+\bibitem{ref9} M. A. Urias-López y S. Salazar-García, ``Poblaciones de gusano telarañero y barrenador de ramas en huertos de aguacate `Hass' de Nayarit, México,'' \textit{Agric. Téc. Méx.}, vol. 34, no. 4, pp. 431--441, 2008.
+
+\bibitem{ref10} V. M. Coria \textit{et al.}, ``Autoecología del barrenador de ramas \textit{Copturus aguacatae} Kissinger (Coleoptera: Curculionidae) del aguacate en Michoacán, México,'' en \textit{Proc. VI World Avocado Congress}, Viña del Mar, Chile, nov. 2007.
+
+\bibitem{ref11} V. M. Coria \textit{et al.}, ``Cuantificación de adultos de \textit{Copturus aguacatae} Kissinger (Coleoptera: Curculionidae) con trampas pegajosas de colores en una prueba de efectividad biológica con bioplaguicidas microbiales en Ziracuaretiro, Michoacán, México,'' \textit{Entomología Mexicana}, vol. 11, no. 2, pp. 703--708, 2012.
+
+\bibitem{ref12} M. A. E. Bravo y F. Espinosa G., ``Volatile emissions in \textit{Persea americana} in response to the stem borer \textit{Copturus aguacatae} attack,'' \textit{Allelopathy J.}, vol. 21, no. 1, pp. 165--173, 2008.
+
+\bibitem{ref13} J. Cibrián Tovar, ``Aislamiento, identificación y síntesis de la feromona del barrenador de las ramas, \textit{Copturus aguacatae} Kissinger,'' Reporte para SAGARPA, Ciudad de México, 2008.
+
+\bibitem{ref14} N. De Dios-Ávila \textit{et al.}, ``Primer registro de \textit{Neocatolaccus tylodermae} Ashmead en México como parasitoide de \textit{Copturus aguacatae} Kissinger,'' \textit{Southwestern Entomologist}, vol. 41, no. 4, pp. 1203--1206, 2016.
+
+\bibitem{ref15} E. Arapostathi \textit{et al.}, ``Early detection of potential infestation by \textit{Capnodis tenebrionis} (L.) (Coleoptera: Buprestidae) in stone and pome fruit orchards using multispectral data from a UAV,'' \textit{Agronomy}, vol. 13, dic. 2023.
+
+\bibitem{ref16} Y. Zhang, B. Li, H. Sun, Y. Gao, M. Zhang y P. Wang, ``FID-Net: A feature-enhanced deep learning network for forest infestation detection,'' arXiv:2512.13104, 2025.
+
+\bibitem{ref17} A. Carrillo-Gómez, D. Moctezuma y E. Camacho-Pérez, ``UAV-based detection and spatial mapping of crop damage using deep learning,'' \textit{Information}, vol. 17, art. 529, 2026.
+
+\bibitem{ref18} L. B. Buckley, ``Temperature-sensitive development shapes insect phenological responses to climate change,'' \textit{Curr. Opin. Insect Sci.}, vol. 53, 2022.
+
+\bibitem{ref19} S. Chen, S. J. Fleischer, P. C. Tobin y M. C. Saunders, ``Projecting insect voltinism under high and low greenhouse gas emission conditions,'' \textit{Environ. Entomol.}, vol. 40, no. 3, pp. 505--515, 2011, doi: 10.1603/EN10099.
+
+\bibitem{ref20} J. G. Kingsolver y L. B. Buckley, ``Ontogenetic variation in thermal sensitivity shapes insect ecological responses to climate change,'' \textit{Curr. Opin. Insect Sci.}, 2020, doi: 10.1016/j.cois.2020.05.005.
+
+\end{thebibliography}
+
+\end{document}
